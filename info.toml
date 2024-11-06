@@ -1,0 +1,8 @@
+[meta]
+name        = "Gforce"
+author      = "spuz512"
+category    = "Overlay"
+
+[script]
+dependencies = [ "VehicleState", "Camera", "ghosts++-0.3.18" ]
+timeout = 0
