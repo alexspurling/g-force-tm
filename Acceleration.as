@@ -1,16 +1,15 @@
 class DashboardAcceleration
 {
 	float g_dt;
-	float prev_speed = 0;
-	int arr_size = 4;
-	array<float> acc = {0, 0, 0, 0};
 	int idx = 0;
-	int num_samples = 100;
+	int num_samples = 150;
 
 	array<float> acc_f_history(num_samples);
 	array<float> acc_h_history(num_samples);
 	array<float> acc_v_history(num_samples);
 	array<float> acc_history(num_samples);
+	array<float> delta_history(num_samples);
+	array<float> vel_history(num_samples);
 	int idx_history = 0;
 
 	vec3 prev_vel;
@@ -40,29 +39,33 @@ class DashboardAcceleration
 	}
 
     void Update(float dt, CSceneVehicleVisState@ vis) {
-        // if (dt > 0) {
-        //     g_dt = dt;
-        // } else {
-        //     g_dt = 1;
-        // }
+		g_dt = dt;
 		if (dt == 0) {
 			return;
-		} else {
-			g_dt = dt;
 		}
 
-		cur_pos = vis.Position;
 		cur_vel = vis.WorldVel;
 		cur_accel = vis.WorldVel - prev_vel;
+
 		prev_vel = cur_vel;
 
 		// Divide by 9.8 to convert from m/s/s to g
 		const float G = 9.8;
 
-		acc_history[idx_history] = cur_accel.Length() / (g_dt * G);
-        acc_f_history[idx_history] = dot(cur_accel, vis.Dir) / (g_dt * G);
-        acc_h_history[idx_history] = dot(cur_accel, vis.Left) / (g_dt * G);
-        acc_v_history[idx_history] = dot(cur_accel, vis.Up) / (g_dt * G);
+		acc_history[idx_history] = cur_accel.Length() / (dt * G);
+        acc_f_history[idx_history] = dot(cur_accel, vis.Dir) / (dt * G);
+        acc_h_history[idx_history] = dot(cur_accel, vis.Left) / (dt * G);
+        acc_v_history[idx_history] = dot(cur_accel, vis.Up) / (dt * G);
+        delta_history[idx_history] = dt;
+        vel_history[idx_history] = cur_vel.Length();
+
+		// string strToCopy = "";
+		// for (uint n = 0; n < num_samples; n++) {
+		// 	int idx = (idx_history + n + 1) % num_samples;
+		// 	strToCopy = strToCopy + vel_history[idx] + "\t" + acc_h_history[idx] + "\t" + delta_history[idx] + "\n";
+		// }
+		// IO::SetClipboard(strToCopy);
+
 		idx_history = (idx_history + 1) % num_samples;
     }
 
@@ -246,16 +249,7 @@ class DashboardAcceleration
         const vec2 endPointPerp = Camera::ToScreenSpace(pos + v_perp);
         const vec2 endPoint2 = Camera::ToScreenSpace(pos + vec3(1, 0, 0));
 
-        if (Math::IsNaN(endPoint.x) || Math::IsNaN(tip1Point.x) || Math::IsNaN(tip2Point.x)) {
-            print("pos: " + toStr(pos));
-            print("direction: " + toStr(direction));
-            print("unit: " + toStr(unit));
-            print("cross: " + toStr(cross(unit, vec3(0, 1, 0))));
-            print("v_perp: " + toStr(v_perp));
-        }
         drawLine(startPoint, endPoint, color);
-        // drawLine(startPoint, endPointPerp, vec4(0.0f, 0.0f, 1.0f, 0.5f));
-        // drawLine(startPoint, endPoint2, vec4(0.0f, 1.0f, 0.0f, 0.5f));
         drawLine(endPoint, tip1Point, color);
         drawLine(endPoint, tip2Point, color);
     }
@@ -282,10 +276,8 @@ class DashboardAcceleration
 	void Render(CSceneVehicleVisState@ vis)
 	{
 		vec2 offset = vec2(0.0f, 0.0f);
-		vec2 size = m_size;
+		vec2 size = vec2(200, 200);
 
-        // RenderPositiveAccelerometer(offset, size, curr_acc);
-        // RenderNegativeAccelerometer(offset, size, curr_acc);
         RenderGeforceGraph(offset, size);
 
 		if (Setting_Acceleration_ShowMaxValues) {
@@ -300,8 +292,8 @@ class DashboardAcceleration
 			// behaves weirdly when we draw the vectors. We need a bit of buffer
 			float w = (Camera::GetProjectionMatrix() * cur_pos).w;
 			if (w < -0.05) {
-				drawVector(cur_pos, cur_vel * 0.1, vec4(1, 0.5, 0, 0.5));
-				drawVector(cur_pos, cur_accel, vec4(1, 0, 0, 0.5));
+				drawVector(cur_pos, cur_vel * 0.01, vec4(1, 0.5, 0, 0.5));
+				drawVector(cur_pos, cur_accel * 2, vec4(1, 0, 0, 0.5));
 			}
 		}
 

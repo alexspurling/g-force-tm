@@ -4,5 +4,5 @@ author      = "spuz512"
 category    = "Overlay"
 
 [script]
-dependencies = [ "VehicleState", "Camera", "ghosts++-0.3.18" ]
+dependencies = [ "VehicleState", "Camera" ]
 timeout = 0
