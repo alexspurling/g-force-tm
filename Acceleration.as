@@ -5,7 +5,7 @@ class DashboardAcceleration
 	int arr_size = 4;
 	array<float> acc = {0, 0, 0, 0};
 	int idx = 0;
-	int num_samples = 290;
+	int num_samples = 100;
 
 	array<float> acc_f_history(num_samples);
 	array<float> acc_h_history(num_samples);
@@ -40,21 +40,29 @@ class DashboardAcceleration
 	}
 
     void Update(float dt, CSceneVehicleVisState@ vis) {
-        if (dt > 0) {
-            g_dt = dt;
-        } else {
-            g_dt = 1;
-        }
+        // if (dt > 0) {
+        //     g_dt = dt;
+        // } else {
+        //     g_dt = 1;
+        // }
+		if (dt == 0) {
+			return;
+		} else {
+			g_dt = dt;
+		}
 
 		cur_pos = vis.Position;
 		cur_vel = vis.WorldVel;
 		cur_accel = vis.WorldVel - prev_vel;
 		prev_vel = cur_vel;
 
-		acc_history[idx_history] = cur_accel.Length() * (100 / g_dt);
-        acc_f_history[idx_history] = dot(cur_accel, vis.Dir) * (100 / g_dt);
-        acc_h_history[idx_history] = dot(cur_accel, vis.Left) * (100 / g_dt);
-        acc_v_history[idx_history] = dot(cur_accel, vis.Up) * (100 / g_dt);
+		// Divide by 9.8 to convert from m/s/s to g
+		const float G = 9.8;
+
+		acc_history[idx_history] = cur_accel.Length() / (g_dt * G);
+        acc_f_history[idx_history] = dot(cur_accel, vis.Dir) / (g_dt * G);
+        acc_h_history[idx_history] = dot(cur_accel, vis.Left) / (g_dt * G);
+        acc_v_history[idx_history] = dot(cur_accel, vis.Up) / (g_dt * G);
 		idx_history = (idx_history + 1) % num_samples;
     }
 
@@ -273,8 +281,6 @@ class DashboardAcceleration
 
 	void Render(CSceneVehicleVisState@ vis)
 	{
-        if (g_dt <= 0) return;
-
 		vec2 offset = vec2(0.0f, 0.0f);
 		vec2 size = m_size;
 
@@ -289,6 +295,7 @@ class DashboardAcceleration
 		nvg::ResetTransform();
 
 		if (Setting_Show_Vectors) {
+			const vec3 cur_pos = vis.Position;
 			// The position of the car in Camera 3 is just slightly ahead of the camera so it
 			// behaves weirdly when we draw the vectors. We need a bit of buffer
 			float w = (Camera::GetProjectionMatrix() * cur_pos).w;
@@ -301,6 +308,5 @@ class DashboardAcceleration
         // drawVector(vis.Position, vis.Dir, vec4(1, 0, 0, 0.5));
         // drawVector(vis.Position, vis.Left, vec4(0, 1, 0, 0.5));
         // drawVector(vis.Position, vis.Up, vec4(0, 0, 1, 0.5));
-
 	}
 }
